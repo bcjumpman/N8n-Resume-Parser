@@ -1,0 +1,341 @@
+{
+  "name": "Resume Parser",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Resume Refiner AI Agent",
+        "formDescription": "Please submit your resume, desired job description and email for the AI Agent to provide you with suggestion on how to update your resume for the specific job you are interested in applying for.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Resume",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Job Description",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0dd06e84-cfc6-4f58-9d46-15e5e5221b3b",
+      "name": "On form submission",
+      "webhookId": "fb47efa4-643a-4d81-8be8-02dc429018aa"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "=Resume",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3028fc07-46f3-4779-9f63-e319384eb4da",
+      "name": "Extract from File",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json['Job Description'] }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        304,
+        192
+      ],
+      "id": "59fc822f-abbb-4d88-9297-a2cf32ff233e",
+      "name": "HTTP Request - Job Description",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        112
+      ],
+      "id": "10eb68c3-3431-4984-baa9-a5e4f67e391c",
+      "name": "Merge",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract resume text directly from PDF extraction\nconst items = $input.all();\n\nreturn items.map(item => {\n  // Get the text from Extract from File node\n  let resumeText = '';\n  \n  // The text should be in the 'text' field from PDF extraction\n  if (item.json && item.json.text) {\n    resumeText = item.json.text;\n  }\n  \n  // Get original form data\n  const formData = $('On form submission').first()?.json;\n  \n  console.log('Resume text length:', resumeText.length);\n  console.log('Form data keys:', Object.keys(formData || {}));\n  \n  return {\n    json: {\n      resume_text: resumeText,\n      user_email: formData?.Email || '',\n      user_name: 'Brian Carmichael',\n      job_url: formData?.['Job Description'] || '',\n      original_form: formData\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "a5b222d2-42ed-4457-bcbc-48a4dc50e5b4",
+      "name": "Parse Resume"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=RESUME:\n{{ $json.resume_text }}\n\nJOB POSTING:\n{{ $json.job_url }}\n\nAnalyze this resume against the job posting and provide specific suggestions. Return response as JSON with:\n- suggestions: array of specific actionable improvements\n- keywords: array of important keywords from job posting\n- match_score: score out of 10\n\nReturn only valid JSON matching the required schema.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a professional resume consultant. Analyze the resume against the job posting and return suggestions in this EXACT JSON format:\n\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"suggestions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Actionable suggestions to improve the resume\"\n    },\n    \"keywords\": {\n      \"type\": \"array\", \n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"match_score\": {\n      \"type\": \"string\"\n    }\n  }\n}\n\nReturn ONLY the JSON data, no additional text."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        928,
+        112
+      ],
+      "id": "bf51d450-a166-47ce-aa5e-735200663432",
+      "name": "AI Resume Analyzer"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        320
+      ],
+      "id": "aa163ab7-dcdd-4f82-a068-6fb088aafa45",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "FdzO1NbR6gbefG1B",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json.Email }}",
+        "subject": "Resume Analysis Complete - Here Are The Results",
+        "message": "=Hi {{ $('Merge').first().json.user_name }},\n\nYour resume has been analyzed for the role you submitted!\n\n🎯 MATCH SCORE: {{ $json.match_score }}/10\n\n📝 ACTIONABLE SUGGESTIONS:\n{{#each $json.suggestions}}\n- {{ this }}\n\n{{/each}}\n\n🔑 KEY KEYWORDS TO INCLUDE:\n{{#each $json.keywords}}\n- {{ this }}\n\n{{/each}}\n\n💡 NEXT STEPS:\n- Review each suggestion carefully\n- Update your resume with relevant changes\n- Tailor your cover letter using similar keywords\n- Apply within 24-48 hours for best results\n\nBest of luck with your application!\n\n- Resume Refiner AI Agent",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1280,
+        112
+      ],
+      "id": "763be18a-ba6e-46a0-91d1-c75ba8dd7a97",
+      "name": "Send Resume Suggestions",
+      "webhookId": "2faf5fa4-20be-49e0-b269-5d5d253add83",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aSlxgX10uO2ljT8k",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\n  {\n    \"output\": {\n      \"suggestions\": [\n        \"Include more metrics and quantifiable achievements in the Experience section to showcase impact\",\n        \"Add a section highlighting specific projects related to AI and NLP to emphasize relevance to job posting\",\n        \"Consider including certifications or professional development courses related to job requirements\"\n      ],\n      \"keywords\": [\n        \"Full Stack Web Development\",\n        \"Backend Engineering\", \n        \"Frontend Engineering\",\n        \"AI\",\n        \"NLP\",\n        \"AWS\",\n        \"CI/CD\",\n        \"Data Analytics\",\n        \"Software Architecture\"\n      ],\n      \"match_score\": \"6.5\"\n    }\n  }\n]",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1136,
+        304
+      ],
+      "id": "4772864b-41b0-460b-979b-8e81f93cb3b1",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        416
+      ],
+      "id": "889832ef-4632-4857-b044-b93b5918dc5a",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "8YVrFpndDpn2E8fC",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request - Job Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Parse Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Job Description": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Parse Resume": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Resume Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Resume Analyzer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Resume Analyzer": {
+      "main": [
+        [
+          {
+            "node": "Send Resume Suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Resume Analyzer",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f3ec59b8-a2bb-4c30-8495-1324e7994586",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5bd35ac914b873b7ea2171d9e278b028f78c45551a5037e2ccf7bf721abcf55c"
+  },
+  "id": "YqSB3OWYml1sSQCs",
+  "tags": []
+}
