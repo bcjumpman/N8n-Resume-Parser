@@ -96,6 +96,9 @@ This selective parsing would:
 - Decrease processing time
 - Lower API costs
 <img width="1360" height="732" alt="Final_prompt" src="https://github.com/user-attachments/assets/93f00de2-803e-4dec-9784-4d7bb80522b3" />
+<img width="900" height="660" alt="Output_Email" src="https://github.com/user-attachments/assets/d32d97e5-99b4-4ea1-9351-7cab2895e0f4" />
+
+
 
 ### Enhanced AI Analysis
 **Multi-Stage Processing**: Break AI analysis into specialized steps:
