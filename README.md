@@ -108,10 +108,10 @@ This selective parsing would:
 4. **Industry Alignment**: Tailor language to company culture
 
 ### User Experience Improvements
-**Progress Notifications**: Add intermediate email updates showing processing status
-**Detailed Scoring**: Provide category-specific match scores (technical skills, experience, education)
-**Actionable Templates**: Include specific text suggestions rather than general advice
-**Follow-up Analysis**: Option to re-analyze after implementing suggestions
+1. **Progress Notifications**: Add intermediate email updates showing processing status
+2. **Detailed Scoring**: Provide category-specific match scores (technical skills, experience, education)
+3. **Actionable Templates**: Include specific text suggestions rather than general advice
+4. **Follow-up Analysis**: Option to re-analyze after implementing suggestions
 
 ### Performance Optimizations
 1. **Caching Layer**: Store processed job postings to avoid re-scraping identical URLs
